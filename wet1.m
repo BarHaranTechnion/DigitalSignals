@@ -11,31 +11,14 @@ time_vector = 0:DELTA_TIME:1-DELTA_TIME;
 
 %% Question 1
 % A single frequency of 2pi*250 signal's Fourier Trasnform:
-% Define the signal frequency
+
+frequencies = (-300:0.5:300);
 omega_0 = 2*pi*250;
-% Time vector starts at 0 - equivalent to u(t)
-x1 = sin(omega_0 * time_vector) .* exp(-2 * time_vector);
+Xf1 = frequencies/300;
 
-% Compute Fourier transform numerically using FFT on a sufficiently long window
-N = length(time_vector);
-Xf = fft(x1, N) * DELTA_TIME;
-
-% Frequency vector in Hz
-f = (0:N-1) / (N*DELTA_TIME);  % positive frequencies
-% Shift FFT and frequency to center zero
-Xf_shift = fftshift(Xf);
-% Center frequency vector around zero (fftshift later applied to Xf)
-f_shift = f - CONTINOUS_SAMPLE_RATE/2;
-
-% Select frequency range |f| <= 300 Hz
-idx = abs(f_shift) <= 300;
-f_plot = f_shift(idx);
-X_plot = Xf_shift(idx);
-
-% Plot magnitude
 figure;
 subplot(3,1,1);
-plot(f_plot, abs(X_plot), 'LineWidth', 1.2);
+plot(frequencies, abs(Xf1));
 xlabel('Frequency (Hz)');
 ylabel('|F\{x(t)\}|');
 title('Magnitude of Fourier Transform of x(t)=sin(\omega_0 t) e^{-2t} u(t)');
@@ -57,7 +40,7 @@ sinuses = sin(freqs.' * time_vector);
 x2 = reshape(sinuses.', 1, []);
 
 % Play sound: each frequency lasts 1 second, sampling rate SAMPLE_RATE
-%soundsc(x2, CONTINOUS_SAMPLE_RATE);
+soundsc(x2, CONTINOUS_SAMPLE_RATE);
 
 
 %% Question 3
@@ -110,19 +93,75 @@ hold off;
 %% Question 5
 % Calculate DFT of x2
 N2 = length(x2);
-X2_dft = fft(x2, N2);
-% Prepare frequency vector for x2 DFT (same length N as used earlier)
-X_dft_shift = fftshift(X2_dft) * DELTA_TIME;
-f2 = (0:N2-1) / (N2*DELTA_TIME);
-f2_shift = f2 - (CONTINOUS_SAMPLE_RATE/2);
 
-idx = abs(f2_shift) <= 300;
+X2_dft = fftshift(fft(x2));
+f2 = (-N2/2:N2/2-1) * (CONTINOUS_SAMPLE_RATE/N2);
 
-% Plot in the first figure's second subplot (abs, fftshift)
 figure(1);
 subplot(3,1,2);
-plot(f2_shift(idx), abs(X_dft_shift(idx)));
+plot(f2, abs(X2_dft)/N2);
 xlabel('Frequency (Hz)');
-ylabel('|X_{dft}(f)|');
-title('Magnitude of DFT of x2 (fftshifted)');
+ylabel('|X_2(f)|');
+title('Magnitude Spectrum of x_2');
+% Cut according to original signal frequencies
+xlim([-600 600]);
 grid on;
+
+
+%% Question 7 - Sinc Reconstruction
+% Upsample x4 back to original sampling grid
+UPSAMPLE_RATIO = DOWNSAMPLE_RATIO;
+x7 = upsample(x4, UPSAMPLE_RATIO);
+
+% Sinc interpolation filter (ideal reconstruction)
+n = -255:256; % Selected range
+h_sinc = sinc(n / UPSAMPLE_RATIO);
+
+% Convolution reconstruction
+x7_sinc = conv(x7, h_sinc, 'same');
+
+% Time vector for original signal
+time_x2 = (0:length(x2)-1) * DELTA_TIME;
+
+figure(2);
+subplot(2,1,1);
+
+hold on;
+plot(time_x2(x2_index_range), x7_sinc(x2_index_range));
+hold off;
+
+
+%% Question 8 - ZOH Reconstruction
+% Zero-order hold reconstruction - repeat discrete elements RATIO time
+x8_zoh = repelem(x4, UPSAMPLE_RATIO);
+
+hold on;
+plot(time_x2(x2_index_range), x8_zoh(x2_index_range));
+hold off;
+
+
+%% Question 9 - FOH Reconstruction
+% Upsample x4 (zero insertion)
+x9_up = upsample(x4, UPSAMPLE_RATIO);
+
+% Create triangular (FOH) interpolation kernel
+n = -UPSAMPLE_RATIO:UPSAMPLE_RATIO;
+h_foh = (1 - abs(n)/UPSAMPLE_RATIO);
+h_foh(abs(n) > UPSAMPLE_RATIO) = 0;
+
+% Convolution
+x9_foh = conv(x9_up, h_foh, 'same');
+
+hold on;
+plot(time_x2(x2_index_range), x9_foh(x2_index_range));
+hold off;
+
+
+%% Question 10
+% 
+soundsc(x7_sinc, CONTINOUS_SAMPLE_RATE);
+soundsc(x8_zoh, CONTINOUS_SAMPLE_RATE);
+soundsc(x9_foh, CONTINOUS_SAMPLE_RATE);
+
+%% Question 11
+NEW_SAMPLE_RATE = 800;
