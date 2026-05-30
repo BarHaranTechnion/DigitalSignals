@@ -14,7 +14,10 @@ time_vector = 0:DELTA_TIME:1-DELTA_TIME;
 
 frequencies = (-300:0.5:300);
 omega_0 = 2*pi*250;
-Xf1 = frequencies/300;
+omega_from_f = 2*pi*frequencies;
+Xf1 = (1/(2j)) * ( ...
+    1./(2 + 1j*(omega_from_f - omega_0)) - ...
+    1./(2 + 1j*(omega_from_f + omega_0)) );
 
 figure;
 subplot(3,1,1);
@@ -40,7 +43,7 @@ sinuses = sin(freqs.' * time_vector);
 x2 = reshape(sinuses.', 1, []);
 
 % Play sound: each frequency lasts 1 second, sampling rate SAMPLE_RATE
-soundsc(x2, CONTINOUS_SAMPLE_RATE);
+%soundsc(x2, CONTINOUS_SAMPLE_RATE);
 
 
 %% Question 3
@@ -53,15 +56,16 @@ subplot(2,1,1);
 plot(x2_time_range, x2(x2_index_range), ":");
 xlabel('Time (s)');
 ylabel('Amplitude');
-title('Signal x2 over 2.99 to 3.01 s (plot 1)');
+title('Signal x(t) over 2.99 to 3.01 s');
 grid on;
 
 subplot(2,1,2);
 plot(x2_time_range, x2(x2_index_range), ":");
 xlabel('Time (s)');
 ylabel('Amplitude');
-title('Signal x2 over 2.99 to 3.01 s (plot 2)');
+title('Signal x(t) over 2.99 to 3.01 s');
 grid on;
+
 
 %% Question 4
 % Define vars for discrete signal sampling
@@ -80,13 +84,14 @@ N4 = length(x4);
 time_x4 = (0:N4-1) * DISCRETE_DELTA;
 
 % Compute integer index range in x4 that corresponds to 2.99 to 3.01 s
-x4_index_range = floor(2.99/DISCRETE_DELTA):1:floor(3.01/DISCRETE_DELTA);
+x4_index_range = floor(2.99/DISCRETE_DELTA)+1:1:ceil(3.01/DISCRETE_DELTA);
 x4_time_range = time_x4(x4_index_range);
 
 % Overlay stem of x4 on the first subplot (time range 2.99-3.01 s)
 subplot(2,1,1);
 hold on;
 stem(x4_time_range, x4(x4_index_range));
+legend(["Original Signal", "Discrete Sample"])
 hold off;
 
 
@@ -101,8 +106,8 @@ figure(1);
 subplot(3,1,2);
 plot(f2, abs(X2_dft)/N2);
 xlabel('Frequency (Hz)');
-ylabel('|X_2(f)|');
-title('Magnitude Spectrum of x_2');
+ylabel('|X(f)|');
+title('Magnitude Spectrum of x(t)');
 % Cut according to original signal frequencies
 xlim([-600 600]);
 grid on;
@@ -128,6 +133,7 @@ subplot(2,1,1);
 
 hold on;
 plot(time_x2(x2_index_range), x7_sinc(x2_index_range));
+legend(["Original Signal", "Discrete Sample", "Sinc Reconstruct"]);
 hold off;
 
 
@@ -137,6 +143,7 @@ x8_zoh = repelem(x4, UPSAMPLE_RATIO);
 
 hold on;
 plot(time_x2(x2_index_range), x8_zoh(x2_index_range));
+legend(["Original Signal", "Discrete Sample", "Sinc Reconstruct", "ZOH Reconstruct"]);
 hold off;
 
 
@@ -154,14 +161,18 @@ x9_foh = conv(x9_up, h_foh, 'same');
 
 hold on;
 plot(time_x2(x2_index_range), x9_foh(x2_index_range));
+legend(["Original Signal", "Discrete Sample", "Sinc Reconstruct", "ZOH Reconstruct", "FOH Reconstruct"]);
 hold off;
 
 
 %% Question 10
-% 
-soundsc(x7_sinc, CONTINOUS_SAMPLE_RATE);
-soundsc(x8_zoh, CONTINOUS_SAMPLE_RATE);
-soundsc(x9_foh, CONTINOUS_SAMPLE_RATE);
+% Play the reconstructed signal
+%soundsc(x7_sinc, CONTINOUS_SAMPLE_RATE); % Sounds nearly identical
+%soundsc(x8_zoh, CONTINOUS_SAMPLE_RATE); % Sounds choppy
+%soundsc(x9_foh, CONTINOUS_SAMPLE_RATE); % Sounds better but still not the
+%best
 
+%{
 %% Question 11
 NEW_SAMPLE_RATE = 800;
+%}
