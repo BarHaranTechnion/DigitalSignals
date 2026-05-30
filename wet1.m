@@ -38,9 +38,9 @@ freqs = [omega_1, omega_2, omega_3, omega_4]; % Assign to a vector
 
 % Then set the value by frequency for each second
 % Create a matrix - each row for a different frequency
-sinuses = sin(freqs.' * time_vector);
+single_func = sin(freqs.' * time_vector).*exp(-2*time_vector);
 % Concatenate the rows so each frequency plays for 1 second sequentially
-x2 = reshape(sinuses.', 1, []);
+x2 = reshape(single_func.', 1, []);
 
 % Play sound: each frequency lasts 1 second, sampling rate SAMPLE_RATE
 %soundsc(x2, CONTINOUS_SAMPLE_RATE);
